@@ -28,7 +28,7 @@ Interface 选 `SwiftUI`，Language 选 `Swift`，Deployment Target 17.0。
 
 ## 配置 API key
 
-在项目根目录创建 `Meishuguan/Resources/Secrets.plist`，内容：
+在项目根目录创建 `Meishuguan/Resources/Secrets.plist`：
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -37,22 +37,30 @@ Interface 选 `SwiftUI`，Language 选 `Swift`，Deployment Target 17.0。
 <dict>
     <key>ANTHROPIC_API_KEY</key>
     <string>sk-ant-...</string>
+    <key>REPLICATE_API_TOKEN</key>
+    <string></string>
     <key>MESHY_API_KEY</key>
-    <string>msy_...</string>
+    <string></string>
 </dict>
 </plist>
 ```
 
 > `Secrets.plist` 已在 `.gitignore` 里，不会提交。
 
-需要的 key：
-- Anthropic Claude — 在 console.anthropic.com 申请
-- Meshy — 在 meshy.ai 申请
+**必需**：
+- `ANTHROPIC_API_KEY` — 在 https://console.anthropic.com 申请
+
+**可选**（按生成质量从高到低，从贵到免费）：
+- `MESHY_API_KEY`（真 3D，付费订阅）— 暂未启用，留作未来切换
+- `REPLICATE_API_TOKEN`（2D 图，~$0.003/张，flux-schnell，质量好）— 在 https://replicate.com 注册，最低充 $5
+- 都不填 — 自动走 **Pollinations**，完全免费、无 key、效果一般但能跑通整条链路
+
+只填 `ANTHROPIC_API_KEY` 就能完整跑通 prototype。
 
 ## 技术栈
 
 - SwiftUI + SceneKit (iOS 17+)
 - Anthropic Claude (LLM + Vision)
-- Meshy (text-to-3D)
+- 图像生成：Pollinations（免费）/ Replicate flux-schnell（少花钱）
 - Apple Speech.framework (语音转文字)
 - 无后端 — 全部 client 直连

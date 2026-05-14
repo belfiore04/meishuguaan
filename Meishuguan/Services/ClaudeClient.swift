@@ -98,7 +98,7 @@ actor ClaudeClient {
         {
           "note": "整理这次对话产生的读书笔记，500 字以内，以用户原话为主、AI 补充为辅，分自然段，不要小标题",
           "objectName": "用一个中文短词命名这件展品（例如：尺、云、镐、灯、水），最多 4 个汉字",
-          "objectPrompt": "一段英文 prompt，喂给 text-to-3D 模型生成这件展品。强调：a single object, white background, low-poly, soft monochrome with one accent color extracted from the book mood. 不要写人物、不要复杂场景，就是一件可以放在博物馆展台上的物件。"
+          "objectPrompt": "一段英文 prompt，喂给图像生成模型生成这件展品的 3D 渲染图。强调：a single small object centered on a soft white background, museum-quality 3D render, soft studio lighting, low-poly stylized, monochrome with one subtle accent color extracted from the book's mood. 严格禁止：no text, no people, no complex scene, no multiple objects."
         }
         """
 

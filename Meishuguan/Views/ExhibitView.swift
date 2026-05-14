@@ -46,7 +46,13 @@ struct ExhibitView: View {
 
     private var exhibitArea: some View {
         ZStack {
-            if let url = exhibit.modelLocalURL {
+            if let url = exhibit.imageLocalURL,
+               let img = UIImage(contentsOfFile: url.path) {
+                Image(uiImage: img)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding(40)
+            } else if let url = exhibit.modelLocalURL {
                 ModelStageView(modelURL: url)
             } else {
                 Text("展品文件丢失")

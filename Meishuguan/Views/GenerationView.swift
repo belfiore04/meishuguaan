@@ -46,7 +46,7 @@ struct GenerationView: View {
                 session.generationStatusText = "正在为「\(summary.objectName)」塑形…"
             }
 
-            let modelURL = try await MeshyClient.shared.generateObject(prompt: summary.objectPrompt) { p, msg in
+            let imageURL = try await ImageGenerationClient.shared.generateImage(prompt: summary.objectPrompt) { p, msg in
                 Task { @MainActor in
                     session.generationProgress = p
                     session.generationStatusText = msg
@@ -57,7 +57,7 @@ struct GenerationView: View {
                 book: book,
                 noteText: summary.note,
                 objectPrompt: summary.objectPrompt,
-                modelLocalURL: modelURL
+                imageLocalURL: imageURL
             )
             await MainActor.run {
                 session.currentExhibit = exhibit
