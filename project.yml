@@ -1,0 +1,49 @@
+name: Meishuguan
+options:
+  bundleIdPrefix: com.jun.meishuguan
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: zh-Hans
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1"  # iPhone only for v1
+    DEVELOPMENT_TEAM: ""  # fill in your Apple Developer Team ID
+targets:
+  Meishuguan:
+    type: application
+    platform: iOS
+    sources:
+      - path: Meishuguan
+        excludes:
+          - "**/Info.plist"
+    resources:
+      - Meishuguan/Resources
+    info:
+      path: Meishuguan/Info.plist
+      properties:
+        CFBundleDisplayName: 美书馆
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen:
+          UIColorName: ""
+          UIImageName: ""
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSCameraUsageDescription: "拍下书的封面，让 AI 书友认出这本书。"
+        NSMicrophoneUsageDescription: "长按说话与 AI 书友对话。"
+        NSSpeechRecognitionUsageDescription: "把你的声音转成文字，让 AI 书友能听懂。"
+        NSPhotoLibraryUsageDescription: "保存生成的展品图片到相册（可选）。"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jun.meishuguan
+        ENABLE_PREVIEWS: "YES"
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    entitlements:
+      path: Meishuguan/Meishuguan.entitlements
+      properties:
+        com.apple.developer.applesignin:
+          - Default
