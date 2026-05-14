@@ -37,6 +37,8 @@ Interface 选 `SwiftUI`，Language 选 `Swift`，Deployment Target 17.0。
 <dict>
     <key>ANTHROPIC_API_KEY</key>
     <string>sk-ant-...</string>
+    <key>DEEPSEEK_API_KEY</key>
+    <string>sk-...</string>
     <key>REPLICATE_API_TOKEN</key>
     <string></string>
     <key>MESHY_API_KEY</key>
@@ -48,7 +50,8 @@ Interface 选 `SwiftUI`，Language 选 `Swift`，Deployment Target 17.0。
 > `Secrets.plist` 已在 `.gitignore` 里，不会提交。
 
 **必需**：
-- `ANTHROPIC_API_KEY` — 在 https://console.anthropic.com 申请
+- `ANTHROPIC_API_KEY` — 用于拍封面那一次书名识别（Vision），在 https://console.anthropic.com 申请
+- `DEEPSEEK_API_KEY` — 用于聊天和总结（极便宜，~¥几厘一次对话），在 https://platform.deepseek.com 申请
 
 **可选**（按生成质量从高到低，从贵到免费）：
 - `MESHY_API_KEY`（真 3D，付费订阅）— 暂未启用，留作未来切换
@@ -60,7 +63,8 @@ Interface 选 `SwiftUI`，Language 选 `Swift`，Deployment Target 17.0。
 ## 技术栈
 
 - SwiftUI + SceneKit (iOS 17+)
-- Anthropic Claude (LLM + Vision)
+- Anthropic Claude — 仅书封识别（Vision）
+- DeepSeek — 聊天 + 总结（便宜）
 - 图像生成：Pollinations（免费）/ Replicate flux-schnell（少花钱）
 - Apple Speech.framework (语音转文字)
 - 无后端 — 全部 client 直连

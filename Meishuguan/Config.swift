@@ -3,6 +3,9 @@ import Foundation
 enum Config {
     static let anthropicKey: String = secret("ANTHROPIC_API_KEY")
 
+    /// 文本对话/总结走 DeepSeek（OpenAI 兼容、超便宜）。
+    static let deepseekKey: String = secret("DEEPSEEK_API_KEY")
+
     /// 可选。填了就走 Replicate flux-schnell（~$0.003/张），不填走免费 Pollinations。
     static let replicateToken: String = secret("REPLICATE_API_TOKEN")
 

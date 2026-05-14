@@ -157,7 +157,7 @@ struct ChatView: View {
 
         Task {
             do {
-                let reply = try await ClaudeClient.shared.reply(
+                let reply = try await DeepSeekClient.shared.reply(
                     book: book,
                     history: Array(session.messages.dropLast()),
                     userText: text

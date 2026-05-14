@@ -40,7 +40,7 @@ struct GenerationView: View {
                 session.generationProgress = 0
                 session.generationStatusText = "AI 正在整理这次的笔记…"
             }
-            let summary = try await ClaudeClient.shared.summarize(book: book, messages: session.messages)
+            let summary = try await DeepSeekClient.shared.summarize(book: book, messages: session.messages)
 
             await MainActor.run {
                 session.generationStatusText = "正在为「\(summary.objectName)」塑形…"
