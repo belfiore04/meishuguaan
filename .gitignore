@@ -52,5 +52,10 @@ Secrets.plist
 *.env
 .env*
 
+# xcodegen 每次生成都会重写 Info.plist 按 project.yml 的 properties 写值，
+# 让本地 Info.plist 经常 dirty 挡 git pull。
+# project.yml 是 source of truth，Info.plist 不跟踪。
+Meishuguan/Info.plist
+
 # Generated 3D assets cache
 GeneratedAssets/
