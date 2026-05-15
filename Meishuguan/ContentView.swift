@@ -23,6 +23,8 @@ struct ContentView: View {
                 if let exhibit = session.currentExhibit {
                     ExhibitView(exhibit: exhibit)
                 }
+            case .gallery:
+                ExhibitGalleryView()
             }
 
             if let err = session.lastError {

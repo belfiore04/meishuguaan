@@ -28,8 +28,7 @@ struct ChatView: View {
     private var topBar: some View {
         HStack {
             Button {
-                session.stage = .start
-                session.reset()
+                session.returnToLobby()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .light))

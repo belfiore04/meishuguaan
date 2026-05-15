@@ -45,7 +45,25 @@ struct StartView: View {
                 .font(.system(.footnote, design: .serif))
                 .foregroundStyle(.tertiary)
 
-            Spacer().frame(height: 80)
+            // 展厅入口：只在已经有展品时出现
+            if !session.exhibits.isEmpty {
+                Button {
+                    session.galleryIndex = max(0, session.exhibits.count - 1)
+                    session.stage = .gallery
+                } label: {
+                    Text("展厅 (\(session.exhibits.count))")
+                        .font(.system(.footnote, design: .serif))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 8)
+                        .overlay(Capsule().stroke(.tertiary, lineWidth: 0.5))
+                }
+                .buttonStyle(.plain)
+            } else {
+                Color.clear.frame(height: 33)
+            }
+
+            Spacer().frame(height: 60)
         }
     }
 }

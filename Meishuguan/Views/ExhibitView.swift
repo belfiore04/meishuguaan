@@ -27,7 +27,7 @@ struct ExhibitView: View {
     private var topBar: some View {
         HStack {
             Button {
-                session.reset()
+                session.returnToLobby()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .light))
@@ -85,7 +85,7 @@ struct ExhibitView: View {
                 .font(.system(.footnote, design: .serif))
                 .foregroundStyle(.tertiary)
                 .onTapGesture {
-                    session.reset()
+                    session.returnToLobby()
                 }
                 .padding(.bottom, 24)
         }
@@ -94,7 +94,7 @@ struct ExhibitView: View {
 
 // MARK: - SceneKit stage
 
-private struct ModelStageView: UIViewRepresentable {
+struct ModelStageView: UIViewRepresentable {
     let modelURL: URL
 
     func makeUIView(context: Context) -> SCNView {
@@ -178,7 +178,7 @@ private struct ModelStageView: UIViewRepresentable {
 
 // MARK: - Note paper sheet
 
-private struct NotePaperView: View {
+struct NotePaperView: View {
     let noteText: String
     let book: Book
 

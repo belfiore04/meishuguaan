@@ -60,6 +60,8 @@ struct GenerationView: View {
                 imageLocalURL: imageURL
             )
             await MainActor.run {
+                session.exhibits.append(exhibit)
+                session.galleryIndex = session.exhibits.count - 1
                 session.currentExhibit = exhibit
                 session.stage = .showingExhibit
             }
