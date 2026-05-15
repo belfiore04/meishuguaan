@@ -28,23 +28,11 @@ Interface 选 `SwiftUI`，Language 选 `Swift`，Deployment Target 17.0。
 
 ## 配置 API key
 
-在项目根目录创建 `Meishuguan/Resources/Secrets.plist`：
+仓库里有一个模板 `Meishuguan/Resources/Secrets.example.plist`，复制一份成 `Secrets.plist` 后填值：
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>ANTHROPIC_API_KEY</key>
-    <string>sk-ant-...</string>
-    <key>DEEPSEEK_API_KEY</key>
-    <string>sk-...</string>
-    <key>REPLICATE_API_TOKEN</key>
-    <string></string>
-    <key>MESHY_API_KEY</key>
-    <string></string>
-</dict>
-</plist>
+```bash
+cp Meishuguan/Resources/Secrets.example.plist Meishuguan/Resources/Secrets.plist
+# 用 Xcode 或任意编辑器打开 Secrets.plist，把 key 填进去
 ```
 
 > `Secrets.plist` 已在 `.gitignore` 里，不会提交。
@@ -59,6 +47,13 @@ Interface 选 `SwiftUI`，Language 选 `Swift`，Deployment Target 17.0。
 - 都不填 — 自动走 **Pollinations**，完全免费、无 key、效果一般但能跑通整条链路
 
 只填 `ANTHROPIC_API_KEY` 就能完整跑通 prototype。
+
+## 跑不通时排查
+
+- **报 "model not found" / 404**：去 `Meishuguan/Config.swift` 把 `claudeModel` 换成你 Anthropic 账号实际可用的 model ID（console.anthropic.com → Models 看一眼）。Vision 任务用 Sonnet 完全够，比 Opus 便宜 5x，可以考虑直接换 `claude-sonnet-4-5` 这种。
+- **报 "缺少 ANTHROPIC_API_KEY" / "缺少 DEEPSEEK_API_KEY"**：`Secrets.plist` 没建好，或者 plist 里 key 字段是空字符串。
+- **xcodegen 报找不到 Resources**：确保 `Meishuguan/Resources/` 目录存在（仓库里有 `.gitkeep` 占位）。
+- **真机跑要先填 DEVELOPMENT_TEAM**：`project.yml` 里 `DEVELOPMENT_TEAM: ""` 改成你的 Apple Developer Team ID。模拟器跑不需要。
 
 ## 技术栈
 
