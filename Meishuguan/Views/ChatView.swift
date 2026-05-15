@@ -188,7 +188,7 @@ private struct MessageBubble: View {
             if message.role == .user { Spacer(minLength: 40) }
             Text(message.text)
                 .font(.system(.body, design: .serif))
-                .foregroundStyle(message.role == .user ? .primary : .primary.opacity(0.85))
+                .foregroundStyle(Color.primary.opacity(message.role == .user ? 1.0 : 0.85))
                 .multilineTextAlignment(.leading)
                 .padding(.vertical, 2)
             if message.role == .assistant { Spacer(minLength: 40) }
@@ -211,7 +211,7 @@ private struct MicButton: View {
             .overlay(
                 Image(systemName: "circle.fill")
                     .font(.system(size: 6))
-                    .foregroundStyle(speech.isRecording ? .primary : .clear)
+                    .foregroundStyle(speech.isRecording ? Color.primary : Color.clear)
             )
             .scaleEffect(speech.isRecording ? 1.05 : 1.0)
             .animation(.easeInOut(duration: 0.2), value: speech.isRecording)
