@@ -136,8 +136,9 @@ struct ChatView: View {
                     .font(.system(.body, design: .serif))
                     .lineLimit(1...4)
                     .focused($typeBarFocused)
-                    .submitLabel(.send)
-                    .onSubmit { sendText() }
+                    // 多行 TextField 回车其实是换行，不是 submit。
+                    // 所以不用 .submitLabel(.send)（向上箭头会误导成"按它就发出"）。
+                    // 发送靠右边的圆形按钮。
                 Button(action: sendText) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.title2)
