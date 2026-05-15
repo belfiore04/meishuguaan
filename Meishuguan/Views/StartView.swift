@@ -51,7 +51,7 @@ struct StartView: View {
                     session.galleryIndex = max(0, session.exhibits.count - 1)
                     session.stage = .gallery
                 } label: {
-                    Text("展厅 (\(session.exhibits.count))")
+                    Text("去展厅")
                         .font(.system(.footnote, design: .serif))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 18)

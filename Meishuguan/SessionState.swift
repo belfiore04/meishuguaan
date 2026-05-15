@@ -21,6 +21,7 @@ final class SessionState {
     var currentExhibit: Exhibit?
     var exhibits: [Exhibit] = []     // 启动时从盘加载
     var galleryIndex: Int = 0
+    var readingStartedAt: Date?      // 这次阅读的开始时间（进入 chatting 时设置）
     var lastError: String?
 
     init() {
@@ -56,6 +57,18 @@ final class SessionState {
         persist()
     }
 
+    /// 用户在展台说明里改了展品名后回写。
+    func renameExhibit(id: UUID, to newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard let idx = exhibits.firstIndex(where: { $0.id == id }) else { return }
+        exhibits[idx].objectName = trimmed
+        if currentExhibit?.id == id {
+            currentExhibit?.objectName = trimmed
+        }
+        persist()
+    }
+
     private static var indexURL: URL {
         Exhibit.exhibitsDirectory.appendingPathComponent("index.json")
     }
@@ -75,6 +88,7 @@ final class SessionState {
         stage = .start
         currentBook = nil
         messages = []
+        readingStartedAt = nil
         generationProgress = 0
         generationStatusText = ""
         currentExhibit = nil

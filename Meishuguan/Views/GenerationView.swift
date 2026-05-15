@@ -55,9 +55,12 @@ struct GenerationView: View {
 
             let exhibit = Exhibit(
                 book: book,
+                objectName: summary.objectName,
                 noteText: summary.note,
                 objectPrompt: summary.objectPrompt,
-                imageFilename: imageFilename
+                imageFilename: imageFilename,
+                messages: session.messages,
+                startedAt: session.readingStartedAt
             )
             await MainActor.run {
                 session.appendExhibit(exhibit)

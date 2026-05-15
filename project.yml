@@ -33,8 +33,6 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: "拍下书的封面，让 AI 书友认出这本书。"
-        NSMicrophoneUsageDescription: "长按说话与 AI 书友对话。"
-        NSSpeechRecognitionUsageDescription: "把你的声音转成文字，让 AI 书友能听懂。"
         NSPhotoLibraryUsageDescription: "保存生成的展品图片到相册（可选）。"
     settings:
       base:

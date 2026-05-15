@@ -3,6 +3,7 @@ import SwiftUI
 struct ExhibitGalleryView: View {
     @Environment(SessionState.self) private var session
     @State private var showNote: Bool = false
+    @State private var showMenu: Bool = false
 
     var body: some View {
         ZStack {
@@ -11,14 +12,22 @@ struct ExhibitGalleryView: View {
             VStack(spacing: 0) {
                 topBar
                 pager
+                bottomBar
             }
         }
         .sheet(isPresented: $showNote) {
             if let exhibit = currentExhibit {
-                NotePaperView(noteText: exhibit.noteText, book: exhibit.book)
-                    .presentationDetents([.medium, .large])
-                    .presentationBackground(.regularMaterial)
+                ExhibitLabelView(exhibit: exhibit) { newName in
+                    session.renameExhibit(id: exhibit.id, to: newName)
+                }
+                .presentationDetents([.medium, .large])
+                .presentationBackground(.regularMaterial)
             }
+        }
+        .confirmationDialog("", isPresented: $showMenu, titleVisibility: .hidden) {
+            Button("回主页") { session.returnToLobby() }
+            // 展馆列表（多书层级做完后启用）
+            Button("取消", role: .cancel) { }
         }
     }
 
@@ -30,9 +39,9 @@ struct ExhibitGalleryView: View {
     private var topBar: some View {
         HStack {
             Button {
-                session.returnToLobby()
+                showMenu = true
             } label: {
-                Image(systemName: "chevron.left")
+                Image(systemName: "line.3.horizontal")
                     .font(.system(size: 16, weight: .light))
                     .foregroundStyle(.secondary)
                     .padding(8)
@@ -58,65 +67,44 @@ struct ExhibitGalleryView: View {
             set: { session.galleryIndex = $0 }
         )) {
             ForEach(Array(session.exhibits.enumerated()), id: \.element.id) { idx, exhibit in
-                ExhibitPage(exhibit: exhibit, onTapNote: { showNote = true })
+                ExhibitStage(exhibit: exhibit)
                     .tag(idx)
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
     }
-}
 
-private struct ExhibitPage: View {
-    let exhibit: Exhibit
-    let onTapNote: () -> Void
+    private var bottomBar: some View {
+        VStack(spacing: 8) {
+            if let exhibit = currentExhibit {
+                Text(exhibit.objectName)
+                    .font(.system(size: 22, weight: .light, design: .serif))
+                    .tracking(4)
+                    .padding(.bottom, 2)
 
-    var body: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                if let url = exhibit.imageLocalURL,
-                   let img = UIImage(contentsOfFile: url.path) {
-                    Image(uiImage: img)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .padding(40)
-                } else if let url = exhibit.modelLocalURL {
-                    ModelStageView(modelURL: url)
-                } else if let symbol = exhibit.fallbackSymbol {
-                    Image(systemName: symbol)
-                        .font(.system(size: 96, weight: .ultraLight))
-                        .foregroundStyle(.primary.opacity(0.75))
-                } else {
-                    Text("展品文件丢失")
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .frame(maxHeight: .infinity)
+                Text(exhibit.book.title + (exhibit.book.author.map { " · \($0)" } ?? ""))
+                    .font(.system(size: 11, design: .serif))
+                    .foregroundStyle(.tertiary)
 
-            VStack(spacing: 8) {
-                Text(exhibit.book.title)
-                    .font(.system(.subheadline, design: .serif))
-                if let author = exhibit.book.author {
-                    Text(author)
-                        .font(.system(size: 10, design: .serif))
-                        .foregroundStyle(.tertiary)
-                }
+                Text(ExhibitTimeFormatter.string(start: exhibit.startedAt, end: exhibit.generatedAt))
+                    .font(.system(size: 10, design: .serif))
+                    .foregroundStyle(.tertiary)
+                    .tracking(1)
+                    .padding(.top, 2)
+
                 Button {
-                    onTapNote()
+                    showNote = true
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "doc.plaintext")
-                            .font(.caption)
-                        Text("展台说明")
-                            .font(.system(.footnote, design: .serif))
-                    }
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .overlay(Capsule().stroke(.tertiary, lineWidth: 0.5))
+                    Text("展台说明")
+                        .font(.system(.footnote, design: .serif))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 8)
+                        .overlay(Capsule().stroke(.tertiary, lineWidth: 0.5))
                 }
-                .padding(.top, 4)
+                .padding(.top, 14)
             }
-            .padding(.bottom, 48)
         }
+        .padding(.bottom, 36)
     }
 }

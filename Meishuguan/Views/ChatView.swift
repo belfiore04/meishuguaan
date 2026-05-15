@@ -2,17 +2,18 @@ import SwiftUI
 
 struct ChatView: View {
     @Environment(SessionState.self) private var session
-    @State private var speech = SpeechRecognizer()
     @State private var typedText: String = ""
     @State private var sending: Bool = false
-    @State private var showTypeBar: Bool = false
     @FocusState private var typeBarFocused: Bool
 
     let book: Book
 
     var body: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            // 点空白处收键盘
+            Color(.systemBackground)
+                .ignoresSafeArea()
+                .onTapGesture { typeBarFocused = false }
 
             VStack(spacing: 0) {
                 topBar
@@ -21,7 +22,19 @@ struct ChatView: View {
             }
         }
         .task {
-            _ = await speech.requestAuthorization()
+            // 记录这次阅读的开始时间
+            if session.readingStartedAt == nil {
+                session.readingStartedAt = Date()
+            }
+            // AI 主动发首句（仅当对话还没开始时）
+            if session.messages.isEmpty {
+                session.messages.append(
+                    ChatMessage(
+                        role: .assistant,
+                        text: "看到了。\n你慢慢翻，想说什么再说。"
+                    )
+                )
+            }
         }
     }
 
@@ -59,7 +72,7 @@ struct ChatView: View {
                         Capsule().stroke(.tertiary, lineWidth: 0.5)
                     )
             }
-            .disabled(session.messages.isEmpty || sending)
+            .disabled(session.messages.count < 2 || sending)  // 至少要有一轮真实对话
         }
         .padding(.horizontal, 16)
         .padding(.top, 4)
@@ -90,55 +103,27 @@ struct ChatView: View {
     }
 
     private var inputArea: some View {
-        VStack(spacing: 12) {
-            if showTypeBar {
-                HStack(spacing: 8) {
-                    TextField("说点什么…", text: $typedText, axis: .vertical)
-                        .font(.system(.body, design: .serif))
-                        .lineLimit(1...4)
-                        .focused($typeBarFocused)
-                        .submitLabel(.send)
-                        .onSubmit { sendText() }
-                    Button(action: sendText) {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(typedText.isEmpty ? .tertiary : .primary)
-                    }
-                    .disabled(typedText.isEmpty || sending)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(.tertiary, lineWidth: 0.5)
-                )
-                .padding(.horizontal, 20)
+        HStack(spacing: 8) {
+            TextField("说点什么…", text: $typedText, axis: .vertical)
+                .font(.system(.body, design: .serif))
+                .lineLimit(1...4)
+                .focused($typeBarFocused)
+                .submitLabel(.send)
+                .onSubmit { sendText() }
+            Button(action: sendText) {
+                Image(systemName: "arrow.up.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(typedText.isEmpty ? Color.primary.opacity(0.2) : Color.primary)
             }
-
-            HStack(spacing: 24) {
-                Spacer()
-                Button {
-                    showTypeBar.toggle()
-                    if showTypeBar { typeBarFocused = true }
-                } label: {
-                    Image(systemName: showTypeBar ? "mic" : "keyboard")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 36, height: 36)
-                }
-                .disabled(sending)
-
-                MicButton(speech: speech) { transcript in
-                    if !transcript.isEmpty {
-                        send(text: transcript)
-                    }
-                }
-                .disabled(sending)
-
-                Color.clear.frame(width: 36, height: 36)
-                Spacer()
-            }
+            .disabled(typedText.isEmpty || sending)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(.tertiary, lineWidth: 0.5)
+        )
+        .padding(.horizontal, 20)
         .padding(.bottom, 24)
     }
 
@@ -175,6 +160,7 @@ struct ChatView: View {
     }
 
     private func end() {
+        typeBarFocused = false
         session.stage = .generating
     }
 }
@@ -193,37 +179,5 @@ private struct MessageBubble: View {
             if message.role == .assistant { Spacer(minLength: 40) }
         }
         .padding(.horizontal, 24)
-    }
-}
-
-private struct MicButton: View {
-    @Bindable var speech: SpeechRecognizer
-    let onFinish: (String) -> Void
-
-    var body: some View {
-        Circle()
-            .stroke(.primary.opacity(speech.isRecording ? 0.6 : 0.3), lineWidth: 0.5)
-            .background(
-                Circle().fill(.primary.opacity(speech.isRecording ? 0.08 : 0.0))
-            )
-            .frame(width: 80, height: 80)
-            .overlay(
-                Image(systemName: "circle.fill")
-                    .font(.system(size: 6))
-                    .foregroundStyle(speech.isRecording ? Color.primary : Color.clear)
-            )
-            .scaleEffect(speech.isRecording ? 1.05 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: speech.isRecording)
-            .gesture(
-                LongPressGesture(minimumDuration: 0.1)
-                    .onChanged { _ in
-                        if !speech.isRecording { speech.startRecording() }
-                    }
-                    .onEnded { _ in
-                        let t = speech.transcript
-                        speech.stopRecording()
-                        onFinish(t)
-                    }
-            )
     }
 }

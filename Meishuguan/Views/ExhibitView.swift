@@ -13,14 +13,16 @@ struct ExhibitView: View {
 
             VStack(spacing: 0) {
                 topBar
-                exhibitArea
+                ExhibitStage(exhibit: exhibit)
                 bottomBar
             }
         }
         .sheet(isPresented: $showNote) {
-            NotePaperView(noteText: exhibit.noteText, book: exhibit.book)
-                .presentationDetents([.medium, .large])
-                .presentationBackground(.regularMaterial)
+            ExhibitLabelView(exhibit: exhibit) { newName in
+                session.renameExhibit(id: exhibit.id, to: newName)
+            }
+            .presentationDetents([.medium, .large])
+            .presentationBackground(.regularMaterial)
         }
     }
 
@@ -44,7 +46,48 @@ struct ExhibitView: View {
         .padding(.top, 4)
     }
 
-    private var exhibitArea: some View {
+    private var bottomBar: some View {
+        VStack(spacing: 8) {
+            Text(exhibit.objectName)
+                .font(.system(size: 22, weight: .light, design: .serif))
+                .tracking(4)
+                .padding(.bottom, 2)
+
+            Text(ExhibitTimeFormatter.string(start: exhibit.startedAt, end: exhibit.generatedAt))
+                .font(.system(size: 10, design: .serif))
+                .foregroundStyle(.tertiary)
+                .tracking(1)
+
+            Button {
+                showNote = true
+            } label: {
+                Text("展台说明")
+                    .font(.system(.footnote, design: .serif))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 8)
+                    .overlay(Capsule().stroke(.tertiary, lineWidth: 0.5))
+            }
+            .padding(.top, 14)
+
+            Text("再读一本书")
+                .font(.system(.footnote, design: .serif))
+                .foregroundStyle(.tertiary)
+                .onTapGesture {
+                    session.returnToLobby()
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 24)
+        }
+    }
+}
+
+// MARK: - 展品视觉舞台
+
+struct ExhibitStage: View {
+    let exhibit: Exhibit
+
+    var body: some View {
         ZStack {
             if let url = exhibit.imageLocalURL,
                let img = UIImage(contentsOfFile: url.path) {
@@ -64,35 +107,6 @@ struct ExhibitView: View {
             }
         }
         .frame(maxHeight: .infinity)
-    }
-
-    private var bottomBar: some View {
-        VStack(spacing: 14) {
-            Button {
-                showNote = true
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "doc.plaintext")
-                        .font(.caption)
-                    Text("展台说明")
-                        .font(.system(.footnote, design: .serif))
-                }
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .overlay(
-                    Capsule().stroke(.tertiary, lineWidth: 0.5)
-                )
-            }
-
-            Text("再读一本书")
-                .font(.system(.footnote, design: .serif))
-                .foregroundStyle(.tertiary)
-                .onTapGesture {
-                    session.returnToLobby()
-                }
-                .padding(.bottom, 24)
-        }
     }
 }
 
@@ -130,14 +144,12 @@ struct ModelStageView: UIViewRepresentable {
             for child in modelScene.rootNode.childNodes {
                 modelNode.addChildNode(child)
             }
-            // 估算并归一化大小到约 0.8 个单位
             let (minB, maxB) = modelNode.boundingBox
             let extent = max(maxB.x - minB.x, max(maxB.y - minB.y, maxB.z - minB.z))
             if extent > 0 {
                 let scale = 0.8 / extent
                 modelNode.scale = SCNVector3(scale, scale, scale)
             }
-            // 居中
             let mid = SCNVector3(
                 (minB.x + maxB.x) / 2,
                 (minB.y + maxB.y) / 2,
@@ -147,12 +159,10 @@ struct ModelStageView: UIViewRepresentable {
             modelNode.position = SCNVector3(0, 0.1, 0)
             scene.rootNode.addChildNode(modelNode)
 
-            // 缓慢自转
             let rotate = SCNAction.rotate(by: .pi * 2, around: SCNVector3(0, 1, 0), duration: 24)
             modelNode.runAction(SCNAction.repeatForever(rotate))
         }
 
-        // 灯光
         let key = SCNNode()
         key.light = SCNLight()
         key.light?.type = .directional
@@ -168,7 +178,6 @@ struct ModelStageView: UIViewRepresentable {
         fill.light?.color = UIColor.white
         scene.rootNode.addChildNode(fill)
 
-        // 相机
         let cam = SCNNode()
         cam.camera = SCNCamera()
         cam.camera?.fieldOfView = 35
@@ -180,31 +189,127 @@ struct ModelStageView: UIViewRepresentable {
     }
 }
 
-// MARK: - Note paper sheet
+// MARK: - 展台说明卡（一级标题展品名 + 二级标题时间 + 正文 + 看完整对话）
 
-struct NotePaperView: View {
-    let noteText: String
-    let book: Book
+struct ExhibitLabelView: View {
+    let exhibit: Exhibit
+    var onRename: (String) -> Void = { _ in }
+
+    @State private var editingName: Bool = false
+    @State private var nameDraft: String = ""
+    @State private var showFullChat: Bool = false
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(book.title)
-                        .font(.system(.headline, design: .serif))
-                    if let author = book.author {
-                        Text(author)
-                            .font(.system(.caption, design: .serif))
+            VStack(alignment: .leading, spacing: 0) {
+                // 一级标题：展品名（点击进入编辑态）
+                if editingName {
+                    TextField("", text: $nameDraft)
+                        .font(.system(size: 28, weight: .light, design: .serif))
+                        .tracking(4)
+                        .submitLabel(.done)
+                        .onSubmit { commitNameEdit() }
+                } else {
+                    Text(exhibit.objectName)
+                        .font(.system(size: 28, weight: .light, design: .serif))
+                        .tracking(4)
+                        .onTapGesture {
+                            nameDraft = exhibit.objectName
+                            editingName = true
+                        }
+                }
+
+                // 二级标题：创作时间
+                Text(ExhibitTimeFormatter.longString(start: exhibit.startedAt, end: exhibit.generatedAt))
+                    .font(.system(size: 11, design: .serif))
+                    .foregroundStyle(.tertiary)
+                    .tracking(1)
+                    .padding(.top, 6)
+
+                Divider().padding(.vertical, 20)
+
+                // 正文
+                Text(exhibit.noteText)
+                    .font(.system(.body, design: .serif))
+                    .lineSpacing(7)
+                    .multilineTextAlignment(.leading)
+                    .foregroundStyle(.primary.opacity(0.92))
+
+                // 看完整对话
+                if !exhibit.messages.isEmpty {
+                    Divider().padding(.top, 28).padding(.bottom, 16)
+
+                    if showFullChat {
+                        Text("完整对话")
+                            .font(.system(size: 11, design: .serif))
                             .foregroundStyle(.tertiary)
+                            .tracking(1)
+                            .padding(.bottom, 12)
+
+                        VStack(alignment: .leading, spacing: 16) {
+                            ForEach(exhibit.messages) { msg in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Text(msg.role == .user ? "我" : "书友")
+                                        .font(.system(size: 11, design: .serif))
+                                        .foregroundStyle(.tertiary)
+                                        .frame(width: 30, alignment: .leading)
+                                    Text(msg.text)
+                                        .font(.system(.footnote, design: .serif))
+                                        .foregroundStyle(.primary.opacity(0.85))
+                                        .multilineTextAlignment(.leading)
+                                }
+                            }
+                        }
+                        .padding(.bottom, 24)
+                    } else {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showFullChat = true
+                            }
+                        } label: {
+                            Text("看完整对话 →")
+                                .font(.system(.footnote, design: .serif))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-                Divider()
-                Text(noteText)
-                    .font(.system(.body, design: .serif))
-                    .lineSpacing(6)
-                    .multilineTextAlignment(.leading)
             }
-            .padding(28)
+            .padding(.horizontal, 28)
+            .padding(.top, 36)
+            .padding(.bottom, 40)
         }
+    }
+
+    private func commitNameEdit() {
+        editingName = false
+        let trimmed = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != exhibit.objectName else { return }
+        onRename(trimmed)
+    }
+}
+
+// MARK: - 时间格式化
+
+enum ExhibitTimeFormatter {
+    /// 短：「2026年5月15日 22:14–22:38」
+    static func string(start: Date?, end: Date?) -> String {
+        guard let end else { return "" }
+        let cal = Calendar.current
+        let dateFmt = DateFormatter()
+        dateFmt.locale = Locale(identifier: "zh_CN")
+        dateFmt.dateFormat = "yyyy年M月d日"
+        let date = dateFmt.string(from: end)
+        let timeFmt = DateFormatter()
+        timeFmt.locale = Locale(identifier: "zh_CN")
+        timeFmt.dateFormat = "HH:mm"
+        if let start, cal.isDate(start, inSameDayAs: end) {
+            return "\(date) \(timeFmt.string(from: start))–\(timeFmt.string(from: end))"
+        }
+        return "\(date) \(timeFmt.string(from: end))"
+    }
+
+    /// 长：和 string() 一样，给说明卡用，留着以后可以扩
+    static func longString(start: Date?, end: Date?) -> String {
+        string(start: start, end: end)
     }
 }
