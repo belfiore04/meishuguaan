@@ -5,21 +5,35 @@ import SwiftUI
 struct ExhibitGalleryView: View {
     @Environment(SessionState.self) private var session
     @State private var showNote: Bool = false
-    @State private var showGalleryList: Bool = false
+    @State private var drawerOpen: Bool = false
 
     var body: some View {
-        ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+        ZStack(alignment: .leading) {
+            // 主内容
+            ZStack {
+                Color(.systemBackground).ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                topBar
-                if let gallery = session.activeGallery, !gallery.exhibits.isEmpty {
-                    pager(gallery: gallery)
-                    bottomBar(gallery: gallery)
-                } else {
-                    emptyState
+                VStack(spacing: 0) {
+                    topBar
+                    if let gallery = session.activeGallery, !gallery.exhibits.isEmpty {
+                        pager(gallery: gallery)
+                        bottomBar(gallery: gallery)
+                    } else {
+                        emptyState
+                    }
                 }
             }
+
+            // 抽屉浮层
+            LeftDrawerView(
+                isOpen: $drawerOpen,
+                onSelectGallery: { gallery in
+                    session.enterGallery(gallery)
+                },
+                onSelectHome: {
+                    session.returnToLobby()
+                }
+            )
         }
         .sheet(isPresented: $showNote) {
             if let exhibit = currentExhibit {
@@ -29,18 +43,6 @@ struct ExhibitGalleryView: View {
                 .presentationDetents([.medium, .large])
                 .presentationBackground(.regularMaterial)
             }
-        }
-        .sheet(isPresented: $showGalleryList) {
-            GalleryListView(
-                title: "切换展厅",
-                onSelect: { gallery in
-                    showGalleryList = false
-                    session.enterGallery(gallery)
-                },
-                onCancel: { showGalleryList = false }
-            )
-            .presentationDetents([.medium, .large])
-            .presentationBackground(.regularMaterial)
         }
     }
 
@@ -52,17 +54,10 @@ struct ExhibitGalleryView: View {
 
     private var topBar: some View {
         HStack {
-            // 左：汉堡菜单
-            Menu {
-                Button {
-                    showGalleryList = true
-                } label: {
-                    Label("展厅列表", systemImage: "rectangle.stack")
-                }
-                Button {
-                    session.returnToLobby()
-                } label: {
-                    Label("回主页", systemImage: "house")
+            // 左：汉堡（开抽屉）
+            Button {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    drawerOpen = true
                 }
             } label: {
                 Image(systemName: "line.3.horizontal")
@@ -73,26 +68,21 @@ struct ExhibitGalleryView: View {
 
             Spacer()
 
-            // 中：当前展厅书名（点击切换展厅）
-            Button {
-                showGalleryList = true
-            } label: {
-                VStack(spacing: 2) {
-                    if let gallery = session.activeGallery {
-                        Text(gallery.book.title)
-                            .font(.system(.subheadline, design: .serif))
-                            .lineLimit(1)
-                        if !gallery.exhibits.isEmpty {
-                            Text("\(session.galleryIndex + 1) / \(gallery.exhibits.count)")
-                                .font(.system(size: 10, design: .serif))
-                                .foregroundStyle(.tertiary)
-                        }
-                    } else {
-                        Text("展厅").font(.system(.subheadline, design: .serif))
+            // 中：当前展厅书名 + 位置
+            VStack(spacing: 2) {
+                if let gallery = session.activeGallery {
+                    Text(gallery.book.title)
+                        .font(.system(.subheadline, design: .serif))
+                        .lineLimit(1)
+                    if !gallery.exhibits.isEmpty {
+                        Text("\(session.galleryIndex + 1) / \(gallery.exhibits.count)")
+                            .font(.system(size: 10, design: .serif))
+                            .foregroundStyle(.tertiary)
                     }
+                } else {
+                    Text("展厅").font(.system(.subheadline, design: .serif))
                 }
             }
-            .buttonStyle(.plain)
 
             Spacer()
             Color.clear.frame(width: 32, height: 32)
