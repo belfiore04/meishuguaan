@@ -33,9 +33,9 @@ struct BookCaptureView: View {
                 let (title, author, brief) = try await QwenVLClient.shared.identifyBook(from: image)
                 let book = Book(title: title, author: author, brief: brief, coverImage: image)
                 await MainActor.run {
-                    session.currentBook = book
-                    session.messages = []
-                    session.stage = .chatting
+                    // 不直接进 chatting；先进 confirming 让用户确认是不是这本
+                    session.pendingBook = book
+                    session.stage = .confirming
                 }
             } catch {
                 await MainActor.run {

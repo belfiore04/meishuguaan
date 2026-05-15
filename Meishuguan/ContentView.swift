@@ -13,6 +13,8 @@ struct ContentView: View {
                 BookCaptureView()
             case .identifying:
                 IdentifyingView()
+            case .confirming:
+                ConfirmBookView()
             case .chatting:
                 if let book = session.currentBook {
                     ChatView(book: book)

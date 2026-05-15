@@ -1,9 +1,11 @@
 import SwiftUI
 
+/// 展厅页：一本书的所有展品左右滑切换。
+/// activeGalleryKey 控制看的是哪个展厅；galleryIndex 控制看到这个展厅里第几件。
 struct ExhibitGalleryView: View {
     @Environment(SessionState.self) private var session
     @State private var showNote: Bool = false
-    @State private var showMenu: Bool = false
+    @State private var showGalleryList: Bool = false
 
     var body: some View {
         ZStack {
@@ -11,8 +13,12 @@ struct ExhibitGalleryView: View {
 
             VStack(spacing: 0) {
                 topBar
-                pager
-                bottomBar
+                if let gallery = session.activeGallery, !gallery.exhibits.isEmpty {
+                    pager(gallery: gallery)
+                    bottomBar(gallery: gallery)
+                } else {
+                    emptyState
+                }
             }
         }
         .sheet(isPresented: $showNote) {
@@ -24,36 +30,70 @@ struct ExhibitGalleryView: View {
                 .presentationBackground(.regularMaterial)
             }
         }
-        .confirmationDialog("", isPresented: $showMenu, titleVisibility: .hidden) {
-            Button("回主页") { session.returnToLobby() }
-            // 展馆列表（多书层级做完后启用）
-            Button("取消", role: .cancel) { }
+        .sheet(isPresented: $showGalleryList) {
+            GalleryListView(
+                title: "切换展厅",
+                onSelect: { gallery in
+                    showGalleryList = false
+                    session.enterGallery(gallery)
+                },
+                onCancel: { showGalleryList = false }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationBackground(.regularMaterial)
         }
     }
 
     private var currentExhibit: Exhibit? {
-        guard session.exhibits.indices.contains(session.galleryIndex) else { return nil }
-        return session.exhibits[session.galleryIndex]
+        guard let gallery = session.activeGallery else { return nil }
+        guard gallery.exhibits.indices.contains(session.galleryIndex) else { return nil }
+        return gallery.exhibits[session.galleryIndex]
     }
 
     private var topBar: some View {
         HStack {
-            Button {
-                showMenu = true
+            // 左：汉堡菜单
+            Menu {
+                Button {
+                    showGalleryList = true
+                } label: {
+                    Label("展厅列表", systemImage: "rectangle.stack")
+                }
+                Button {
+                    session.returnToLobby()
+                } label: {
+                    Label("回主页", systemImage: "house")
+                }
             } label: {
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 16, weight: .light))
                     .foregroundStyle(.secondary)
                     .padding(8)
             }
+
             Spacer()
-            VStack(spacing: 2) {
-                Text("展厅")
-                    .font(.system(.subheadline, design: .serif))
-                Text("\(session.galleryIndex + 1) / \(session.exhibits.count)")
-                    .font(.system(size: 10, design: .serif))
-                    .foregroundStyle(.tertiary)
+
+            // 中：当前展厅书名（点击切换展厅）
+            Button {
+                showGalleryList = true
+            } label: {
+                VStack(spacing: 2) {
+                    if let gallery = session.activeGallery {
+                        Text(gallery.book.title)
+                            .font(.system(.subheadline, design: .serif))
+                            .lineLimit(1)
+                        if !gallery.exhibits.isEmpty {
+                            Text("\(session.galleryIndex + 1) / \(gallery.exhibits.count)")
+                                .font(.system(size: 10, design: .serif))
+                                .foregroundStyle(.tertiary)
+                        }
+                    } else {
+                        Text("展厅").font(.system(.subheadline, design: .serif))
+                    }
+                }
             }
+            .buttonStyle(.plain)
+
             Spacer()
             Color.clear.frame(width: 32, height: 32)
         }
@@ -61,12 +101,12 @@ struct ExhibitGalleryView: View {
         .padding(.top, 4)
     }
 
-    private var pager: some View {
+    private func pager(gallery: SessionState.Gallery) -> some View {
         TabView(selection: Binding(
             get: { session.galleryIndex },
             set: { session.galleryIndex = $0 }
         )) {
-            ForEach(Array(session.exhibits.enumerated()), id: \.element.id) { idx, exhibit in
+            ForEach(Array(gallery.exhibits.enumerated()), id: \.element.id) { idx, exhibit in
                 ExhibitStage(exhibit: exhibit)
                     .tag(idx)
             }
@@ -74,7 +114,7 @@ struct ExhibitGalleryView: View {
         .tabViewStyle(.page(indexDisplayMode: .never))
     }
 
-    private var bottomBar: some View {
+    private func bottomBar(gallery: SessionState.Gallery) -> some View {
         VStack(spacing: 8) {
             if let exhibit = currentExhibit {
                 Text(exhibit.objectName)
@@ -82,9 +122,11 @@ struct ExhibitGalleryView: View {
                     .tracking(4)
                     .padding(.bottom, 2)
 
-                Text(exhibit.book.title + (exhibit.book.author.map { " · \($0)" } ?? ""))
-                    .font(.system(size: 11, design: .serif))
-                    .foregroundStyle(.tertiary)
+                if let author = gallery.book.author {
+                    Text(author)
+                        .font(.system(size: 11, design: .serif))
+                        .foregroundStyle(.tertiary)
+                }
 
                 Text(ExhibitTimeFormatter.string(start: exhibit.startedAt, end: exhibit.generatedAt))
                     .font(.system(size: 10, design: .serif))
@@ -100,11 +142,21 @@ struct ExhibitGalleryView: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 8)
-                        .overlay(Capsule().stroke(.tertiary, lineWidth: 0.5))
+                        .overlay(Capsule().stroke(Color.primary.opacity(0.2), lineWidth: 0.5))
                 }
                 .padding(.top, 14)
             }
         }
         .padding(.bottom, 36)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Spacer()
+            Text("这个展厅还没有展品")
+                .font(.system(.footnote, design: .serif))
+                .foregroundStyle(.tertiary)
+            Spacer()
+        }
     }
 }

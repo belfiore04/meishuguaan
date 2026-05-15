@@ -45,18 +45,17 @@ struct StartView: View {
                 .font(.system(.footnote, design: .serif))
                 .foregroundStyle(.tertiary)
 
-            // 展厅入口：只在已经有展品时出现
-            if !session.exhibits.isEmpty {
+            // 展厅入口：只在已经有展品时出现，点进去默认是最近活跃的那个展厅
+            if let latest = session.galleries.first {
                 Button {
-                    session.galleryIndex = max(0, session.exhibits.count - 1)
-                    session.stage = .gallery
+                    session.enterGallery(latest)
                 } label: {
                     Text("去展厅")
                         .font(.system(.footnote, design: .serif))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 8)
-                        .overlay(Capsule().stroke(.tertiary, lineWidth: 0.5))
+                        .overlay(Capsule().stroke(Color.primary.opacity(0.2), lineWidth: 0.5))
                 }
                 .buttonStyle(.plain)
             } else {
