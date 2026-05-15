@@ -7,5 +7,6 @@ struct Exhibit: Identifiable {
     var objectPrompt: String    // 喂给图像/3D 模型的英文 prompt
     var imageLocalURL: URL?     // 2D 图（Pollinations / Replicate 路径）
     var modelLocalURL: URL?     // .usdz/.glb（Meshy 等 3D 路径，未来用）
+    var fallbackSymbol: String? // 没有真图时的 SF Symbol 占位（mock 数据用）
     var generatedAt: Date = Date()
 }

@@ -54,6 +54,10 @@ struct ExhibitView: View {
                     .padding(40)
             } else if let url = exhibit.modelLocalURL {
                 ModelStageView(modelURL: url)
+            } else if let symbol = exhibit.fallbackSymbol {
+                Image(systemName: symbol)
+                    .font(.system(size: 96, weight: .ultraLight))
+                    .foregroundStyle(.primary.opacity(0.75))
             } else {
                 Text("展品文件丢失")
                     .foregroundStyle(.tertiary)
