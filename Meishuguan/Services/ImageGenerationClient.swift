@@ -11,10 +11,11 @@ import Foundation
 actor ImageGenerationClient {
     static let shared = ImageGenerationClient()
 
+    /// 生成展品图片，返回相对于 Documents/Exhibits/ 的文件名（如 "uuid.png"）。
     func generateImage(
         prompt: String,
         progress: @Sendable @escaping (Double, String) -> Void
-    ) async throws -> URL {
+    ) async throws -> String {
         if !Config.replicateToken.isEmpty {
             return try await generateViaReplicate(prompt: prompt, progress: progress)
         } else {
@@ -27,7 +28,7 @@ actor ImageGenerationClient {
     private func generateViaPollinations(
         prompt: String,
         progress: @Sendable @escaping (Double, String) -> Void
-    ) async throws -> URL {
+    ) async throws -> String {
         progress(0.1, "AI 拿起笔…")
 
         let encoded = prompt.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? prompt
@@ -64,7 +65,7 @@ actor ImageGenerationClient {
     private func generateViaReplicate(
         prompt: String,
         progress: @Sendable @escaping (Double, String) -> Void
-    ) async throws -> URL {
+    ) async throws -> String {
         progress(0.05, "提交给 Replicate…")
 
         // 1. 提交 prediction
@@ -114,7 +115,7 @@ actor ImageGenerationClient {
     private func pollReplicate(
         getURL: URL,
         progress: @Sendable @escaping (Double, String) -> Void
-    ) async throws -> URL {
+    ) async throws -> String {
         var attempt = 0
         while true {
             try await Task.sleep(nanoseconds: 2_000_000_000)
@@ -145,21 +146,21 @@ actor ImageGenerationClient {
     private func downloadAndSave(
         from url: URL,
         progress: @Sendable @escaping (Double, String) -> Void
-    ) async throws -> URL {
+    ) async throws -> String {
         progress(0.9, "下载图像…")
         let (data, _) = try await URLSession.shared.data(from: url)
-        let local = try savePNG(data: data)
+        let filename = try savePNG(data: data)
         progress(1.0, "展品准备好了")
-        return local
+        return filename
     }
 
-    private func savePNG(data: Data) throws -> URL {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("Exhibits", isDirectory: true)
+    /// 写入 Documents/Exhibits/<uuid>.png，返回文件名（不含路径）。
+    private func savePNG(data: Data) throws -> String {
+        let dir = Exhibit.exhibitsDirectory
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let local = dir.appendingPathComponent("\(UUID().uuidString).png")
-        try data.write(to: local)
-        return local
+        let filename = "\(UUID().uuidString).png"
+        try data.write(to: dir.appendingPathComponent(filename))
+        return filename
     }
 }
 

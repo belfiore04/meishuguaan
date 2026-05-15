@@ -46,7 +46,7 @@ struct GenerationView: View {
                 session.generationStatusText = "正在为「\(summary.objectName)」塑形…"
             }
 
-            let imageURL = try await ImageGenerationClient.shared.generateImage(prompt: summary.objectPrompt) { p, msg in
+            let imageFilename = try await ImageGenerationClient.shared.generateImage(prompt: summary.objectPrompt) { p, msg in
                 Task { @MainActor in
                     session.generationProgress = p
                     session.generationStatusText = msg
@@ -57,11 +57,10 @@ struct GenerationView: View {
                 book: book,
                 noteText: summary.note,
                 objectPrompt: summary.objectPrompt,
-                imageLocalURL: imageURL
+                imageFilename: imageFilename
             )
             await MainActor.run {
-                session.exhibits.append(exhibit)
-                session.galleryIndex = session.exhibits.count - 1
+                session.appendExhibit(exhibit)
                 session.currentExhibit = exhibit
                 session.stage = .showingExhibit
             }
