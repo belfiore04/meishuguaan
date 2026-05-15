@@ -121,7 +121,7 @@ struct ChatView: View {
                     .padding(.vertical, 4)
                     .overlay(
                         Capsule().stroke(
-                            session.deepMode ? Color.primary.opacity(0.4) : .tertiary,
+                            session.deepMode ? Color.primary.opacity(0.4) : Color.primary.opacity(0.2),
                             lineWidth: 0.5
                         )
                     )
@@ -150,7 +150,7 @@ struct ChatView: View {
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .stroke(
-                        session.deepMode ? Color.primary.opacity(0.5) : .tertiary,
+                        session.deepMode ? Color.primary.opacity(0.5) : Color.primary.opacity(0.2),
                         lineWidth: 0.5
                     )
             )
