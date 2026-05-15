@@ -103,27 +103,59 @@ struct ChatView: View {
     }
 
     private var inputArea: some View {
-        HStack(spacing: 8) {
-            TextField("说点什么…", text: $typedText, axis: .vertical)
-                .font(.system(.body, design: .serif))
-                .lineLimit(1...4)
-                .focused($typeBarFocused)
-                .submitLabel(.send)
-                .onSubmit { sendText() }
-            Button(action: sendText) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(typedText.isEmpty ? Color.primary.opacity(0.2) : Color.primary)
+        VStack(spacing: 8) {
+            // 深入聊聊开关
+            HStack {
+                Spacer()
+                Button {
+                    session.deepMode.toggle()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: session.deepMode ? "circle.fill" : "circle")
+                            .font(.system(size: 6))
+                        Text(session.deepMode ? "深入中 · 结束" : "深入聊聊")
+                    }
+                    .font(.system(size: 11, design: .serif))
+                    .foregroundStyle(session.deepMode ? Color.primary : .secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .overlay(
+                        Capsule().stroke(
+                            session.deepMode ? Color.primary.opacity(0.4) : .tertiary,
+                            lineWidth: 0.5
+                        )
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(sending)
             }
-            .disabled(typedText.isEmpty || sending)
+            .padding(.horizontal, 20)
+
+            HStack(spacing: 8) {
+                TextField("说点什么…", text: $typedText, axis: .vertical)
+                    .font(.system(.body, design: .serif))
+                    .lineLimit(1...4)
+                    .focused($typeBarFocused)
+                    .submitLabel(.send)
+                    .onSubmit { sendText() }
+                Button(action: sendText) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(typedText.isEmpty ? Color.primary.opacity(0.2) : Color.primary)
+                }
+                .disabled(typedText.isEmpty || sending)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(
+                        session.deepMode ? Color.primary.opacity(0.5) : .tertiary,
+                        lineWidth: 0.5
+                    )
+            )
+            .padding(.horizontal, 20)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(.tertiary, lineWidth: 0.5)
-        )
-        .padding(.horizontal, 20)
         .padding(.bottom, 24)
     }
 
@@ -138,13 +170,15 @@ struct ChatView: View {
         let userMsg = ChatMessage(role: .user, text: text)
         session.messages.append(userMsg)
         sending = true
+        let mode: DeepSeekClient.ReplyMode = session.deepMode ? .deep : .normal
 
         Task {
             do {
                 let reply = try await DeepSeekClient.shared.reply(
                     book: book,
                     history: Array(session.messages.dropLast()),
-                    userText: text
+                    userText: text,
+                    mode: mode
                 )
                 await MainActor.run {
                     session.messages.append(ChatMessage(role: .assistant, text: reply))

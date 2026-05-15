@@ -228,12 +228,17 @@ struct ExhibitLabelView: View {
 
                 Divider().padding(.vertical, 20)
 
-                // 正文
-                Text(exhibit.noteText)
-                    .font(.system(.body, design: .serif))
-                    .lineSpacing(7)
-                    .multilineTextAlignment(.leading)
-                    .foregroundStyle(.primary.opacity(0.92))
+                // 正文：按 \n\n 切段，段间用 VStack spacing 留真留白
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(paragraphs.indices, id: \.self) { i in
+                        Text(paragraphs[i])
+                            .font(.system(.body, design: .serif))
+                            .lineSpacing(7)
+                            .multilineTextAlignment(.leading)
+                            .foregroundStyle(.primary.opacity(0.92))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
 
                 // 看完整对话
                 if !exhibit.messages.isEmpty {
@@ -285,6 +290,25 @@ struct ExhibitLabelView: View {
         let trimmed = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed != exhibit.objectName else { return }
         onRename(trimmed)
+    }
+
+    /// 把 noteText 按"两个或更多连续换行"切成段落。
+    /// 容错：如果模型没按 \n\n 输出而是用了单 \n，回退到按单换行切。
+    private var paragraphs: [String] {
+        var text = exhibit.noteText.replacingOccurrences(of: "\r\n", with: "\n")
+        while text.contains("\n\n\n") {
+            text = text.replacingOccurrences(of: "\n\n\n", with: "\n\n")
+        }
+        let byDouble = text
+            .components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        if byDouble.count > 1 { return byDouble }
+        // fallback：模型可能用单 \n 分段
+        return text
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 }
 

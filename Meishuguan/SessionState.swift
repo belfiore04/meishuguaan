@@ -22,6 +22,7 @@ final class SessionState {
     var exhibits: [Exhibit] = []     // 启动时从盘加载
     var galleryIndex: Int = 0
     var readingStartedAt: Date?      // 这次阅读的开始时间（进入 chatting 时设置）
+    var deepMode: Bool = false       // 深入聊聊开关：true 时下一条 reply 会用长版 prompt
     var lastError: String?
 
     init() {
@@ -89,6 +90,7 @@ final class SessionState {
         currentBook = nil
         messages = []
         readingStartedAt = nil
+        deepMode = false
         generationProgress = 0
         generationStatusText = ""
         currentExhibit = nil
