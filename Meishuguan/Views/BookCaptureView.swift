@@ -30,7 +30,7 @@ struct BookCaptureView: View {
         session.stage = .identifying
         Task {
             do {
-                let (title, author, brief) = try await ClaudeClient.shared.identifyBook(from: image)
+                let (title, author, brief) = try await QwenVLClient.shared.identifyBook(from: image)
                 let book = Book(title: title, author: author, brief: brief, coverImage: image)
                 await MainActor.run {
                     session.currentBook = book

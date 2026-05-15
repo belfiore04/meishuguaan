@@ -1,7 +1,7 @@
 import Foundation
 
 /// DeepSeek 走 OpenAI 兼容 API。便宜得多（~¥几厘一次对话），用于 reply 和 summarize。
-/// 书封识别（Vision）仍走 [[ClaudeClient]]，因为 DeepSeek 官方 API 暂不支持图像输入。
+/// 书封识别（Vision）走 [[QwenVLClient]]，因为 DeepSeek 官方 API 暂不支持图像输入。
 actor DeepSeekClient {
     static let shared = DeepSeekClient()
 

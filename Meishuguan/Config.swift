@@ -1,7 +1,8 @@
 import Foundation
 
 enum Config {
-    static let anthropicKey: String = secret("ANTHROPIC_API_KEY")
+    /// 阿里云 DashScope（Qwen-VL）— 用于书封 Vision 识别。
+    static let dashscopeKey: String = secret("DASHSCOPE_API_KEY")
 
     /// 文本对话/总结走 DeepSeek（OpenAI 兼容、超便宜）。
     static let deepseekKey: String = secret("DEEPSEEK_API_KEY")
@@ -12,8 +13,7 @@ enum Config {
     /// 可选。未来真做 3D 物件时用。
     static let meshyKey: String = secret("MESHY_API_KEY")
 
-    static let claudeModel = "claude-opus-4-7"
-    static let anthropicVersion = "2023-06-01"
+    static let qwenVisionModel = "qwen-vl-plus"
 
     private static func secret(_ key: String) -> String {
         guard
