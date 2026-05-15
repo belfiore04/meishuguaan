@@ -7,7 +7,7 @@ struct ExhibitGalleryView: View {
     @State private var showNote: Bool = false
     @State private var drawerOpen: Bool = false
     @State private var showShareDialog: Bool = false
-    @State private var previewImage: PreviewWrapper?
+    @State private var shareMode: ShareMode?
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -50,42 +50,25 @@ struct ExhibitGalleryView: View {
             }
         }
         .confirmationDialog("", isPresented: $showShareDialog, titleVisibility: .hidden) {
-            Button("分享此展品") { shareExhibit() }
-            Button("分享此展厅") { shareGallery() }
-            Button("分享美书馆") { shareMuseum() }
+            Button("分享此展品") {
+                if let ex = currentExhibit { shareMode = .exhibit(ex) }
+            }
+            Button("分享此展厅") {
+                if let g = session.activeGallery { shareMode = .gallery(g) }
+            }
+            Button("分享美书馆") {
+                shareMode = .museum(session.galleries)
+            }
             Button("取消", role: .cancel) {}
         }
-        .sheet(item: $previewImage) { preview in
-            SharePreviewView(image: preview.image)
+        .sheet(item: $shareMode) { mode in
+            SharePreviewView(mode: mode)
         }
     }
 
-    // MARK: - 分享：先生成图 → 弹预览（preview 里再决定保存/分享）
-
-    private func shareExhibit() {
-        guard let exhibit = currentExhibit else { return }
-        Task { @MainActor in
-            if let img = ShareRenderer.render(ExhibitShareCard(exhibit: exhibit)) {
-                previewImage = PreviewWrapper(image: img)
-            }
-        }
-    }
-
-    private func shareGallery() {
-        guard let gallery = session.activeGallery else { return }
-        Task { @MainActor in
-            if let img = ShareRenderer.render(GalleryShareCard(gallery: gallery)) {
-                previewImage = PreviewWrapper(image: img)
-            }
-        }
-    }
-
+    // MARK: - 分享美书馆（从抽屉触发）
     private func shareMuseum() {
-        Task { @MainActor in
-            if let img = ShareRenderer.render(MuseumShareCard(galleries: session.galleries)) {
-                previewImage = PreviewWrapper(image: img)
-            }
-        }
+        shareMode = .museum(session.galleries)
     }
 
     private var currentExhibit: Exhibit? {
@@ -200,10 +183,4 @@ struct ExhibitGalleryView: View {
             Spacer()
         }
     }
-}
-
-/// 用来把 UIImage 包成 Identifiable 给 .sheet(item:) 用。
-struct PreviewWrapper: Identifiable {
-    let id = UUID()
-    let image: UIImage
 }

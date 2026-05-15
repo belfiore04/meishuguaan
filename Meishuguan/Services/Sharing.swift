@@ -72,6 +72,23 @@ enum ShareRenderer {
     }
 }
 
+// MARK: - 分享对象
+
+/// 三种分享层级。给 SharePreviewView 当 sheet item 用。
+enum ShareMode: Identifiable {
+    case exhibit(Exhibit)
+    case gallery(SessionState.Gallery)
+    case museum([SessionState.Gallery])
+
+    var id: String {
+        switch self {
+        case .exhibit(let e): return "e-\(e.id.uuidString)"
+        case .gallery(let g): return "g-\(g.titleKey)"
+        case .museum: return "m-all"
+        }
+    }
+}
+
 // MARK: - 系统分享面板
 
 struct ShareSheet: UIViewControllerRepresentable {

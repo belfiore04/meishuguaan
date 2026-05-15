@@ -159,11 +159,21 @@ struct ExhibitShareCard: View {
 
 struct GalleryShareCard: View {
     let gallery: SessionState.Gallery
+    let intro: String      // LLM 生成的展厅引言
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            mainContent
+            Spacer(minLength: 60)
+            bookSection
+            Spacer(minLength: 60)
+            DashedLine()
+            Spacer(minLength: 50)
+            introSection
+            Spacer(minLength: 50)
+            DashedLine()
+            Spacer(minLength: 50)
+            exhibitsRow
             Spacer(minLength: 0)
             ticketStub
         }
@@ -176,7 +186,7 @@ struct GalleryShareCard: View {
     private var header: some View {
         VStack(spacing: 10) {
             Text("美 书 馆 · 展 厅")
-                .font(.system(size: 32, weight: .light, design: .serif))
+                .font(.system(size: 30, weight: .light, design: .serif))
                 .tracking(8)
             Text("MEISHUGUAN · GALLERY")
                 .font(.system(size: 12, weight: .ultraLight, design: .serif))
@@ -185,108 +195,122 @@ struct GalleryShareCard: View {
         }
     }
 
-    private var mainContent: some View {
-        VStack(spacing: 64) {
-            DashedLine()
-                .padding(.top, 80)
-
-            // 书名 + 作者
-            VStack(spacing: 16) {
-                Text("《\(gallery.book.title)》")
-                    .font(.system(size: 56, weight: .light, design: .serif))
-                    .tracking(4)
-                    .multilineTextAlignment(.center)
-                if let author = gallery.book.author {
-                    Text(author)
-                        .font(.system(size: 26, weight: .light, design: .serif))
-                        .foregroundStyle(.secondary)
-                        .tracking(3)
-                }
+    private var bookSection: some View {
+        VStack(spacing: 18) {
+            Text("《\(gallery.book.title)》")
+                .font(.system(size: 52, weight: .light, design: .serif))
+                .tracking(4)
+                .multilineTextAlignment(.center)
+            if let author = gallery.book.author {
+                Text(author)
+                    .font(.system(size: 24, weight: .light, design: .serif))
+                    .foregroundStyle(.secondary)
+                    .tracking(3)
             }
-            .padding(.top, 32)
-
-            // 件数 + 时间
-            VStack(spacing: 12) {
+            HStack(spacing: 20) {
                 Text("\(gallery.exhibits.count) 件 展 品")
-                    .font(.system(size: 28, weight: .light, design: .serif))
-                    .tracking(6)
+                    .font(.system(size: 18, weight: .light, design: .serif))
+                    .tracking(5)
+                    .foregroundStyle(.tertiary)
+                Text("·")
+                    .font(.system(size: 18, weight: .light, design: .serif))
+                    .foregroundStyle(.tertiary)
                 Text(galleryTimeSpan)
                     .font(.system(size: 18, weight: .light, design: .serif))
                     .foregroundStyle(.tertiary)
                     .tracking(2)
             }
-
-            DashedLine()
-                .padding(.top, 40)
-
-            // 所有展品名横排
-            objectNamesGrid
-                .padding(.top, 16)
+            .padding(.top, 8)
         }
     }
 
+    private var introSection: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            ForEach(paragraphs(of: intro), id: \.self) { para in
+                Text(para)
+                    .font(.system(size: 26, weight: .light, design: .serif))
+                    .lineSpacing(12)
+                    .multilineTextAlignment(.leading)
+                    .foregroundStyle(.primary.opacity(0.9))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     @ViewBuilder
-    private var objectNamesGrid: some View {
+    private var exhibitsRow: some View {
         let exhibits = gallery.exhibits
         switch exhibits.count {
         case 1:
-            // 单件：大图大字居中
-            VStack(spacing: 32) {
-                GalleryExhibitTile(exhibit: exhibits[0], visualSize: 360, nameSize: 48, nameTracking: 8)
+            HStack {
+                Spacer()
+                GalleryExhibitTile(exhibit: exhibits[0], visualSize: 180, nameSize: 28, nameTracking: 6)
+                Spacer()
             }
         case 2:
-            // 两件：横排两件，中等
-            HStack(spacing: 80) {
+            HStack(spacing: 100) {
                 ForEach(exhibits) { ex in
-                    GalleryExhibitTile(exhibit: ex, visualSize: 260, nameSize: 36, nameTracking: 6)
+                    GalleryExhibitTile(exhibit: ex, visualSize: 150, nameSize: 24, nameTracking: 5)
                 }
             }
         case 3:
-            // 三件：横排三件
-            HStack(spacing: 48) {
+            HStack(spacing: 60) {
                 ForEach(exhibits) { ex in
-                    GalleryExhibitTile(exhibit: ex, visualSize: 200, nameSize: 28, nameTracking: 4)
+                    GalleryExhibitTile(exhibit: ex, visualSize: 130, nameSize: 22, nameTracking: 4)
                 }
             }
         default:
-            // 4+ 件：3 列网格，最多 6 件
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 36), count: 3), spacing: 40) {
-                ForEach(exhibits.prefix(6)) { ex in
-                    GalleryExhibitTile(exhibit: ex, visualSize: 160, nameSize: 24, nameTracking: 3)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 30), count: 4), spacing: 30) {
+                ForEach(exhibits.prefix(8)) { ex in
+                    GalleryExhibitTile(exhibit: ex, visualSize: 110, nameSize: 18, nameTracking: 2)
                 }
             }
         }
     }
 
     private var ticketStub: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 28) {
             DashedLine(dashLength: 6, gapLength: 8)
-
             HStack(alignment: .center) {
                 if let qrImg = QRCodeGenerator.image(from: shareURL, size: 160) {
                     Image(uiImage: qrImg)
                         .resizable()
                         .interpolation(.none)
-                        .frame(width: 140, height: 140)
+                        .frame(width: 130, height: 130)
                         .opacity(0.85)
                 } else {
                     Rectangle()
                         .stroke(Color.primary.opacity(0.3), lineWidth: 0.5)
-                        .frame(width: 140, height: 140)
+                        .frame(width: 130, height: 130)
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 10) {
+                VStack(alignment: .trailing, spacing: 8) {
                     Text("MEISHUGUAN")
-                        .font(.system(size: 22, weight: .light, design: .serif))
+                        .font(.system(size: 20, weight: .light, design: .serif))
                         .tracking(8)
                     Text("# \(galleryNumber)")
-                        .font(.system(size: 14, weight: .light, design: .serif))
+                        .font(.system(size: 13, weight: .light, design: .serif))
                         .tracking(5)
                         .foregroundStyle(.tertiary)
                 }
             }
         }
-        .padding(.top, 24)
+        .padding(.top, 20)
+    }
+
+    private func paragraphs(of text: String) -> [String] {
+        var t = text.replacingOccurrences(of: "\r\n", with: "\n")
+        while t.contains("\n\n\n") {
+            t = t.replacingOccurrences(of: "\n\n\n", with: "\n\n")
+        }
+        let byDouble = t.components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        if byDouble.count > 1 { return byDouble }
+        return t.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 
     private var galleryTimeSpan: String {
@@ -346,11 +370,21 @@ private struct GalleryExhibitTile: View {
 
 struct MuseumShareCard: View {
     let galleries: [SessionState.Gallery]
+    let intro: String       // LLM 生成的开门致辞
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            mainContent
+            Spacer(minLength: 100)
+            titleSection
+            Spacer(minLength: 60)
+            DashedLine()
+            Spacer(minLength: 50)
+            introSection
+            Spacer(minLength: 50)
+            DashedLine()
+            Spacer(minLength: 50)
+            statsAndRecent
             Spacer(minLength: 0)
             ticketStub
         }
@@ -372,77 +406,103 @@ struct MuseumShareCard: View {
         }
     }
 
-    private var mainContent: some View {
-        VStack(spacing: 64) {
-            DashedLine()
-                .padding(.top, 120)
+    private var titleSection: some View {
+        Text("我 的 美 书 馆")
+            .font(.system(size: 54, weight: .ultraLight, design: .serif))
+            .tracking(12)
+    }
 
-            Text("我 的 美 书 馆")
-                .font(.system(size: 56, weight: .ultraLight, design: .serif))
-                .tracking(12)
-                .padding(.top, 60)
-
-            VStack(spacing: 20) {
-                Text("\(totalExhibits) 件 展 品")
-                    .font(.system(size: 32, weight: .light, design: .serif))
-                    .tracking(6)
-                Text("\(galleries.count) 个 展 厅")
+    private var introSection: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            ForEach(paragraphs(of: intro), id: \.self) { para in
+                Text(para)
                     .font(.system(size: 24, weight: .light, design: .serif))
-                    .tracking(5)
-                    .foregroundStyle(.secondary)
+                    .lineSpacing(11)
+                    .multilineTextAlignment(.leading)
+                    .foregroundStyle(.primary.opacity(0.9))
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, 16)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
-            DashedLine()
-                .padding(.top, 40)
+    private var statsAndRecent: some View {
+        VStack(spacing: 36) {
+            HStack(spacing: 60) {
+                statItem(value: "\(totalExhibits)", label: "件 展 品")
+                Rectangle().fill(Color.primary.opacity(0.2)).frame(width: 0.5, height: 40)
+                statItem(value: "\(galleries.count)", label: "个 展 厅")
+            }
 
-            // 最近读过
-            VStack(spacing: 22) {
+            VStack(spacing: 18) {
                 Text("最 近 读 过")
-                    .font(.system(size: 18, weight: .light, design: .serif))
+                    .font(.system(size: 15, weight: .light, design: .serif))
                     .tracking(6)
                     .foregroundStyle(.tertiary)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 4)
                 ForEach(recentTitles, id: \.self) { title in
                     Text("《\(title)》")
-                        .font(.system(size: 28, weight: .light, design: .serif))
+                        .font(.system(size: 24, weight: .light, design: .serif))
                         .tracking(2)
                         .multilineTextAlignment(.center)
                 }
             }
-            .padding(.top, 16)
+        }
+    }
+
+    private func statItem(value: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Text(value)
+                .font(.system(size: 44, weight: .ultraLight, design: .serif))
+            Text(label)
+                .font(.system(size: 13, weight: .light, design: .serif))
+                .tracking(4)
+                .foregroundStyle(.tertiary)
         }
     }
 
     private var ticketStub: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: 28) {
             DashedLine(dashLength: 6, gapLength: 8)
-
             HStack(alignment: .center) {
                 if let qrImg = QRCodeGenerator.image(from: shareURL, size: 160) {
                     Image(uiImage: qrImg)
                         .resizable()
                         .interpolation(.none)
-                        .frame(width: 140, height: 140)
+                        .frame(width: 130, height: 130)
                         .opacity(0.85)
                 } else {
                     Rectangle()
                         .stroke(Color.primary.opacity(0.3), lineWidth: 0.5)
-                        .frame(width: 140, height: 140)
+                        .frame(width: 130, height: 130)
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 10) {
+                VStack(alignment: .trailing, spacing: 8) {
                     Text("MEISHUGUAN")
-                        .font(.system(size: 22, weight: .light, design: .serif))
+                        .font(.system(size: 20, weight: .light, design: .serif))
                         .tracking(8)
                     Text("无 限 期 通 票")
-                        .font(.system(size: 14, weight: .light, design: .serif))
+                        .font(.system(size: 13, weight: .light, design: .serif))
                         .tracking(5)
                         .foregroundStyle(.tertiary)
                 }
             }
         }
-        .padding(.top, 24)
+        .padding(.top, 20)
+    }
+
+    private func paragraphs(of text: String) -> [String] {
+        var t = text.replacingOccurrences(of: "\r\n", with: "\n")
+        while t.contains("\n\n\n") {
+            t = t.replacingOccurrences(of: "\n\n\n", with: "\n\n")
+        }
+        let byDouble = t.components(separatedBy: "\n\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        if byDouble.count > 1 { return byDouble }
+        return t.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 
     private var totalExhibits: Int {

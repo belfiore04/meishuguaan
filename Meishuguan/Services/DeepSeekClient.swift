@@ -200,6 +200,120 @@ actor DeepSeekClient {
         return (note, prompt, name)
     }
 
+    // MARK: - 展厅引言
+
+    /// 为一个展厅（一本书的所有展品）生成一段开门引言，给分享卡用。
+    /// 把所有展品的 noteText 融合成一段 150-200 字的引言。
+    func generateGalleryIntro(bookTitle: String, exhibits: [(objectName: String, noteText: String)]) async throws -> String {
+        let exhibitsText = exhibits.enumerated().map { idx, e in
+            "【\(e.objectName)】\n\(e.noteText)"
+        }.joined(separator: "\n\n")
+
+        let system = """
+        你是一位策展人，正在为一个展厅写一段开门引言。
+
+        这个展厅汇集了一位读者对《\(bookTitle)》的 \(exhibits.count) 次阅读。
+        每次阅读凝出一件展品。下面是这些展品本身：
+
+        \(exhibitsText)
+
+        请为这个展厅写一段开门引言——约 150-200 字，两到三段，**段落之间用 \\n\\n**。
+
+        要：
+        - 提炼这几件展品共同的气息，或它们各自的角度。
+        - 让进入展厅的人立刻感知到这位读者和这本书的关系。
+        - 第三人称克制，省略主语为佳，或用"他/她"。
+        - 像一位安静的策展人写在玻璃展柜旁的小卡片。
+
+        绝对不要：
+        - 复述每件展品的内容、按时间列展品。
+        - 用"读者"二字。
+        - 用"对话中提到"、"他说"、"书友答" 等转述视角。
+        - 写"令人深思"、"耐人寻味"、"发人深省"、"读罢掩卷" 这类空话。
+        - 使用 emoji、markdown、列表符号、加粗。
+        - 教训式总结，或下结论。
+
+        输出严格 JSON（不要 markdown 包裹）：
+        { "intro": "..." }
+        """
+
+        let body: [String: Any] = [
+            "model": model,
+            "messages": [
+                ["role": "system", "content": system],
+                ["role": "user", "content": "请写。"]
+            ],
+            "max_tokens": 800,
+            "temperature": 0.7,
+            "response_format": ["type": "json_object"],
+            "stream": false
+        ]
+
+        let raw = try await sendChat(body: body)
+        let cleaned = stripCodeFence(raw)
+        guard let data = cleaned.data(using: .utf8),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let intro = dict["intro"] as? String
+        else {
+            throw DeepSeekError.malformedJSON(raw)
+        }
+        return intro
+    }
+
+    /// 为整座美书馆写一段开门致辞。把所有展厅的 objectName 凝出共同气息。
+    func generateMuseumIntro(galleries: [(bookTitle: String, objectNames: [String])]) async throws -> String {
+        let galleriesText = galleries.map { g in
+            "《\(g.bookTitle)》：\(g.objectNames.joined(separator: "、"))"
+        }.joined(separator: "\n")
+
+        let system = """
+        你是一位策展人，正在为一座私人小型美术馆写一段开门致辞。
+
+        这座美术馆叫"美书馆"，主人是一位读者。他用一个 AI 阅读伴侣读过几本书，
+        每本书的阅读凝结成一系列"展品"。下面是每个展厅的展品名（凝出的意象）：
+
+        \(galleriesText)
+
+        请为这位读者的美书馆写一段开门致辞——约 100-150 字，**两段**，段间用 \\n\\n。
+
+        要：
+        - 提炼这些"意象"中的共同气息或独有风度。
+        - 像在介绍一座真实的、私人的小型美术馆。
+        - 第三人称克制。
+
+        绝对不要：
+        - 列书名、复述书目。
+        - 描述具体某本书。
+        - "令人深思"、"耐人寻味"、"发人深省" 等空话。
+        - emoji、markdown、列表符号。
+        - 用"读者"二字。
+
+        输出严格 JSON：{ "intro": "..." }
+        """
+
+        let body: [String: Any] = [
+            "model": model,
+            "messages": [
+                ["role": "system", "content": system],
+                ["role": "user", "content": "请写。"]
+            ],
+            "max_tokens": 600,
+            "temperature": 0.7,
+            "response_format": ["type": "json_object"],
+            "stream": false
+        ]
+
+        let raw = try await sendChat(body: body)
+        let cleaned = stripCodeFence(raw)
+        guard let data = cleaned.data(using: .utf8),
+              let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let intro = dict["intro"] as? String
+        else {
+            throw DeepSeekError.malformedJSON(raw)
+        }
+        return intro
+    }
+
     // MARK: - Networking
 
     private func sendChat(body: [String: Any]) async throws -> String {

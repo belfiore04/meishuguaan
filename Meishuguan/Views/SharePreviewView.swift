@@ -1,10 +1,16 @@
 import SwiftUI
 
-/// 分享前的预览：让用户先看到生成的卡片长什么样，再决定保存到相册 / 调起系统分享。
+/// 分享前的预览。接 ShareMode：
+/// - exhibit：直接渲染，无 LLM 调用。
+/// - gallery：先调 DeepSeek 生成展厅引言 → 再渲染。
+/// - museum：先调 DeepSeek 生成开门致辞 → 再渲染。
 struct SharePreviewView: View {
     @Environment(\.dismiss) private var dismiss
-    let image: UIImage
+    let mode: ShareMode
 
+    @State private var image: UIImage?
+    @State private var loadingText: String = "正在为你准备一张卡片…"
+    @State private var failed: Bool = false
     @State private var showShareSheet: Bool = false
     @State private var showSavedToast: Bool = false
     @State private var savedFailed: Bool = false
@@ -15,8 +21,14 @@ struct SharePreviewView: View {
 
             VStack(spacing: 0) {
                 topBar
-                preview
-                actions
+                if let image {
+                    preview(image: image)
+                    actions(image: image)
+                } else if failed {
+                    failedView
+                } else {
+                    loadingView
+                }
             }
 
             if showSavedToast || savedFailed {
@@ -24,7 +36,12 @@ struct SharePreviewView: View {
             }
         }
         .sheet(isPresented: $showShareSheet) {
-            ShareSheet(items: [image])
+            if let image {
+                ShareSheet(items: [image])
+            }
+        }
+        .task {
+            await generate()
         }
     }
 
@@ -44,7 +61,7 @@ struct SharePreviewView: View {
         .padding(.horizontal, 8)
     }
 
-    private var preview: some View {
+    private func preview(image: UIImage) -> some View {
         Image(uiImage: image)
             .resizable()
             .aspectRatio(contentMode: .fit)
@@ -53,10 +70,10 @@ struct SharePreviewView: View {
             .frame(maxHeight: .infinity)
     }
 
-    private var actions: some View {
+    private func actions(image: UIImage) -> some View {
         HStack(spacing: 16) {
             actionButton("保存到相册", emphasized: false) {
-                save()
+                save(image: image)
             }
             actionButton("分享", emphasized: true) {
                 showShareSheet = true
@@ -83,6 +100,36 @@ struct SharePreviewView: View {
         .buttonStyle(.plain)
     }
 
+    private var loadingView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            ProgressView()
+                .controlSize(.large)
+                .tint(.primary)
+            Text(loadingText)
+                .font(.system(.callout, design: .serif))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+            Spacer()
+        }
+    }
+
+    private var failedView: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Text("生成失败")
+                .font(.system(.body, design: .serif))
+                .foregroundStyle(.secondary)
+            Button("重试") {
+                Task { await generate() }
+            }
+            .font(.system(.footnote, design: .serif))
+            .foregroundStyle(.primary)
+            Spacer()
+        }
+    }
+
     private var toast: some View {
         VStack {
             Spacer()
@@ -97,9 +144,62 @@ struct SharePreviewView: View {
         .transition(.opacity)
     }
 
-    private func save() {
-        // UIImageWriteToSavedPhotosAlbum 需要 Info.plist 里 NSPhotoLibraryAddUsageDescription。
-        // 通过 SavePhotoHelper 拿回调判断成功/失败，再触发 toast。
+    // MARK: - 生成
+
+    private func generate() async {
+        failed = false
+        switch mode {
+        case .exhibit(let exhibit):
+            await MainActor.run {
+                loadingText = "正在准备这件展品…"
+            }
+            let img = await MainActor.run {
+                ShareRenderer.render(ExhibitShareCard(exhibit: exhibit))
+            }
+            await MainActor.run {
+                if let img { image = img } else { failed = true }
+            }
+
+        case .gallery(let gallery):
+            await MainActor.run {
+                loadingText = "正在为这个展厅写一段引言…"
+            }
+            let exhibitsData = gallery.exhibits.map {
+                (objectName: $0.objectName, noteText: $0.noteText)
+            }
+            let intro = (try? await DeepSeekClient.shared.generateGalleryIntro(
+                bookTitle: gallery.book.title,
+                exhibits: exhibitsData
+            )) ?? ""
+            let img = await MainActor.run {
+                ShareRenderer.render(GalleryShareCard(gallery: gallery, intro: intro))
+            }
+            await MainActor.run {
+                if let img { image = img } else { failed = true }
+            }
+
+        case .museum(let galleries):
+            await MainActor.run {
+                loadingText = "正在为美书馆写一段开门致辞…"
+            }
+            let galleriesData = galleries.map {
+                (bookTitle: $0.book.title, objectNames: $0.exhibits.map(\.objectName))
+            }
+            let intro = (try? await DeepSeekClient.shared.generateMuseumIntro(
+                galleries: galleriesData
+            )) ?? ""
+            let img = await MainActor.run {
+                ShareRenderer.render(MuseumShareCard(galleries: galleries, intro: intro))
+            }
+            await MainActor.run {
+                if let img { image = img } else { failed = true }
+            }
+        }
+    }
+
+    // MARK: - 保存到相册
+
+    private func save(image: UIImage) {
         SavePhotoHelper.shared.save(image: image) { error in
             DispatchQueue.main.async {
                 if error == nil {
@@ -118,7 +218,7 @@ struct SharePreviewView: View {
     }
 }
 
-/// 把 UIImageWriteToSavedPhotosAlbum 的 Objective-C callback 包装成 Swift closure。
+/// 把 UIImageWriteToSavedPhotosAlbum 的 Objective-C 回调包装成 Swift closure。
 final class SavePhotoHelper: NSObject {
     static let shared = SavePhotoHelper()
     private var onFinish: ((Error?) -> Void)?
