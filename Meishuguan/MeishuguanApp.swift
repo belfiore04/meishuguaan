@@ -8,7 +8,6 @@ struct MeishuguanApp: App {
         WindowGroup {
             ContentView()
                 .environment(session)
-                .preferredColorScheme(.light)
                 .tint(.primary)
         }
     }

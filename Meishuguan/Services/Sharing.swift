@@ -55,15 +55,18 @@ private struct DashedHorizontal: Shape {
 
 enum ShareRenderer {
     /// 把任意 SwiftUI View 渲染成 1080×1920 的 9:16 竖图。
+    /// 分享卡始终是纯白底 + 黑字（票根/明信片美学），不跟随系统深色模式——
+    /// 通过 .environment(\.colorScheme, .light) 强制内部所有 semantic 颜色用亮色 token。
     @MainActor
     static func render<Content: View>(_ content: Content) -> UIImage? {
         let size = CGSize(width: 1080, height: 1920)
         let renderer = ImageRenderer(
             content: content
                 .frame(width: size.width, height: size.height)
-                .background(Color(.systemBackground))
+                .background(Color.white)
+                .environment(\.colorScheme, .light)
         )
-        renderer.scale = 1.0    // content 已经按 1080×1920 真实尺寸排版
+        renderer.scale = 1.0
         renderer.proposedSize = ProposedViewSize(size)
         return renderer.uiImage
     }

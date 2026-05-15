@@ -4,6 +4,7 @@ import SwiftUI
 /// 用法：放在 ZStack 顶层，通过 `isOpen` 控制；外部 dim 区点击会回写 isOpen = false。
 struct LeftDrawerView: View {
     @Environment(SessionState.self) private var session
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var isOpen: Bool
 
     /// 用户在抽屉里选了某个展厅。caller 决定下一步。
@@ -17,9 +18,9 @@ struct LeftDrawerView: View {
 
     var body: some View {
         ZStack(alignment: .leading) {
-            // 右侧 dim
+            // 右侧 dim — 深色模式下需要更深的 opacity 才有 dim 感
             Color.black
-                .opacity(isOpen ? 0.18 : 0)
+                .opacity(isOpen ? (colorScheme == .dark ? 0.42 : 0.18) : 0)
                 .ignoresSafeArea()
                 .onTapGesture {
                     withAnimation(.easeOut(duration: 0.25)) { isOpen = false }
