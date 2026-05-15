@@ -34,6 +34,7 @@ targets:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: "拍下书的封面，让 AI 书友认出这本书。"
         NSPhotoLibraryUsageDescription: "保存生成的展品图片到相册（可选）。"
+        NSPhotoLibraryAddUsageDescription: "保存分享卡到相册。"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jun.meishuguan

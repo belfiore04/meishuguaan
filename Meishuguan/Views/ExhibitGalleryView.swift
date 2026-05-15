@@ -7,8 +7,7 @@ struct ExhibitGalleryView: View {
     @State private var showNote: Bool = false
     @State private var drawerOpen: Bool = false
     @State private var showShareDialog: Bool = false
-    @State private var showShareSheet: Bool = false
-    @State private var shareItems: [Any] = []
+    @State private var previewImage: PreviewWrapper?
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -56,19 +55,18 @@ struct ExhibitGalleryView: View {
             Button("分享美书馆") { shareMuseum() }
             Button("取消", role: .cancel) {}
         }
-        .sheet(isPresented: $showShareSheet) {
-            ShareSheet(items: shareItems)
+        .sheet(item: $previewImage) { preview in
+            SharePreviewView(image: preview.image)
         }
     }
 
-    // MARK: - 分享
+    // MARK: - 分享：先生成图 → 弹预览（preview 里再决定保存/分享）
 
     private func shareExhibit() {
         guard let exhibit = currentExhibit else { return }
         Task { @MainActor in
             if let img = ShareRenderer.render(ExhibitShareCard(exhibit: exhibit)) {
-                shareItems = [img]
-                showShareSheet = true
+                previewImage = PreviewWrapper(image: img)
             }
         }
     }
@@ -77,8 +75,7 @@ struct ExhibitGalleryView: View {
         guard let gallery = session.activeGallery else { return }
         Task { @MainActor in
             if let img = ShareRenderer.render(GalleryShareCard(gallery: gallery)) {
-                shareItems = [img]
-                showShareSheet = true
+                previewImage = PreviewWrapper(image: img)
             }
         }
     }
@@ -86,8 +83,7 @@ struct ExhibitGalleryView: View {
     private func shareMuseum() {
         Task { @MainActor in
             if let img = ShareRenderer.render(MuseumShareCard(galleries: session.galleries)) {
-                shareItems = [img]
-                showShareSheet = true
+                previewImage = PreviewWrapper(image: img)
             }
         }
     }
@@ -204,4 +200,10 @@ struct ExhibitGalleryView: View {
             Spacer()
         }
     }
+}
+
+/// 用来把 UIImage 包成 Identifiable 给 .sheet(item:) 用。
+struct PreviewWrapper: Identifiable {
+    let id = UUID()
+    let image: UIImage
 }

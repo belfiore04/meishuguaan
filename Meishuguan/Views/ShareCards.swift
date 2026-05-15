@@ -225,26 +225,34 @@ struct GalleryShareCard: View {
         }
     }
 
+    @ViewBuilder
     private var objectNamesGrid: some View {
-        let names = gallery.exhibits.map(\.objectName)
-        return VStack(spacing: 32) {
-            if names.count <= 3 {
-                HStack(spacing: 60) {
-                    ForEach(Array(names.enumerated()), id: \.offset) { _, name in
-                        Text(name)
-                            .font(.system(size: 56, weight: .ultraLight, design: .serif))
-                            .tracking(8)
-                    }
+        let exhibits = gallery.exhibits
+        switch exhibits.count {
+        case 1:
+            // 单件：大图大字居中
+            VStack(spacing: 32) {
+                GalleryExhibitTile(exhibit: exhibits[0], visualSize: 360, nameSize: 48, nameTracking: 8)
+            }
+        case 2:
+            // 两件：横排两件，中等
+            HStack(spacing: 80) {
+                ForEach(exhibits) { ex in
+                    GalleryExhibitTile(exhibit: ex, visualSize: 260, nameSize: 36, nameTracking: 6)
                 }
-            } else {
-                // 多于 3 件，换行排版
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 40), count: 3), spacing: 36) {
-                    ForEach(Array(names.enumerated()), id: \.offset) { _, name in
-                        Text(name)
-                            .font(.system(size: 44, weight: .ultraLight, design: .serif))
-                            .tracking(6)
-                            .lineLimit(1)
-                    }
+            }
+        case 3:
+            // 三件：横排三件
+            HStack(spacing: 48) {
+                ForEach(exhibits) { ex in
+                    GalleryExhibitTile(exhibit: ex, visualSize: 200, nameSize: 28, nameTracking: 4)
+                }
+            }
+        default:
+            // 4+ 件：3 列网格，最多 6 件
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 36), count: 3), spacing: 40) {
+                ForEach(exhibits.prefix(6)) { ex in
+                    GalleryExhibitTile(exhibit: ex, visualSize: 160, nameSize: 24, nameTracking: 3)
                 }
             }
         }
@@ -298,6 +306,39 @@ struct GalleryShareCard: View {
 
     private var galleryNumber: String {
         String(gallery.titleKey.prefix(6).uppercased())
+    }
+}
+
+// MARK: - 展厅卡里单个展品的视觉 + 名字
+
+private struct GalleryExhibitTile: View {
+    let exhibit: Exhibit
+    let visualSize: CGFloat
+    let nameSize: CGFloat
+    let nameTracking: CGFloat
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // 视觉
+            ZStack {
+                if let url = exhibit.imageLocalURL,
+                   let img = UIImage(contentsOfFile: url.path) {
+                    Image(uiImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } else if let symbol = exhibit.fallbackSymbol {
+                    Image(systemName: symbol)
+                        .font(.system(size: visualSize * 0.55, weight: .ultraLight))
+                        .foregroundStyle(.primary.opacity(0.7))
+                }
+            }
+            .frame(width: visualSize, height: visualSize)
+
+            Text(exhibit.objectName)
+                .font(.system(size: nameSize, weight: .ultraLight, design: .serif))
+                .tracking(nameTracking)
+                .lineLimit(1)
+        }
     }
 }
 

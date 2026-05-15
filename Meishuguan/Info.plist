@@ -24,6 +24,8 @@
     <string>拍下书的封面，让 AI 书友认出这本书。</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>保存生成的展品图片到相册（可选）。</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>保存分享卡到相册。</string>
     <key>UILaunchScreen</key>
     <dict/>
     <key>UISupportedInterfaceOrientations</key>
