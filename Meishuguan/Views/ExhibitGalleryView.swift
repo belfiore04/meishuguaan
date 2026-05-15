@@ -6,6 +6,9 @@ struct ExhibitGalleryView: View {
     @Environment(SessionState.self) private var session
     @State private var showNote: Bool = false
     @State private var drawerOpen: Bool = false
+    @State private var showShareDialog: Bool = false
+    @State private var showShareSheet: Bool = false
+    @State private var shareItems: [Any] = []
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -32,6 +35,9 @@ struct ExhibitGalleryView: View {
                 },
                 onSelectHome: {
                     session.returnToLobby()
+                },
+                onShareMuseum: {
+                    shareMuseum()
                 }
             )
         }
@@ -42,6 +48,46 @@ struct ExhibitGalleryView: View {
                 }
                 .presentationDetents([.medium, .large])
                 .presentationBackground(.regularMaterial)
+            }
+        }
+        .confirmationDialog("", isPresented: $showShareDialog, titleVisibility: .hidden) {
+            Button("分享此展品") { shareExhibit() }
+            Button("分享此展厅") { shareGallery() }
+            Button("分享美书馆") { shareMuseum() }
+            Button("取消", role: .cancel) {}
+        }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(items: shareItems)
+        }
+    }
+
+    // MARK: - 分享
+
+    private func shareExhibit() {
+        guard let exhibit = currentExhibit else { return }
+        Task { @MainActor in
+            if let img = ShareRenderer.render(ExhibitShareCard(exhibit: exhibit)) {
+                shareItems = [img]
+                showShareSheet = true
+            }
+        }
+    }
+
+    private func shareGallery() {
+        guard let gallery = session.activeGallery else { return }
+        Task { @MainActor in
+            if let img = ShareRenderer.render(GalleryShareCard(gallery: gallery)) {
+                shareItems = [img]
+                showShareSheet = true
+            }
+        }
+    }
+
+    private func shareMuseum() {
+        Task { @MainActor in
+            if let img = ShareRenderer.render(MuseumShareCard(galleries: session.galleries)) {
+                shareItems = [img]
+                showShareSheet = true
             }
         }
     }
@@ -85,7 +131,16 @@ struct ExhibitGalleryView: View {
             }
 
             Spacer()
-            Color.clear.frame(width: 32, height: 32)
+
+            // 右：分享
+            Button {
+                showShareDialog = true
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 16, weight: .light))
+                    .foregroundStyle(.secondary)
+                    .padding(8)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.top, 4)

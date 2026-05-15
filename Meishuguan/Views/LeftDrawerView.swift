@@ -10,6 +10,8 @@ struct LeftDrawerView: View {
     var onSelectGallery: (SessionState.Gallery) -> Void
     /// 用户在抽屉里点了「首页」。
     var onSelectHome: () -> Void
+    /// 用户在抽屉底部点了「分享美书馆」。
+    var onShareMuseum: () -> Void = {}
 
     private let drawerWidth: CGFloat = 200
 
@@ -85,7 +87,30 @@ struct LeftDrawerView: View {
                 .padding(.top, 4)
             }
 
-            Spacer()
+            // 底部分享美书馆
+            Divider().padding(.horizontal, 20)
+            Button {
+                withAnimation(.easeOut(duration: 0.25)) { isOpen = false }
+                // 等抽屉关闭后再触发，避免 sheet 和 drawer 冲突
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    onShareMuseum()
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 12, weight: .ultraLight))
+                        .foregroundStyle(.secondary)
+                    Text("分享美书馆")
+                        .font(.system(.footnote, design: .serif))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 24)
         }
     }
 
