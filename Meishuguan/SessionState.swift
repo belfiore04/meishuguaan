@@ -19,7 +19,8 @@ final class SessionState {
     var generationProgress: Double = 0
     var generationStatusText: String = ""
     var currentExhibit: Exhibit?
-    var exhibits: [Exhibit] = []     // 这次 app 会话里积累的展品
+    // 这次 app 会话里积累的展品。初始注入 mock 展示展厅形态；等持久化做完改回 []。
+    var exhibits: [Exhibit] = SeedData.makeMockExhibits()
     var galleryIndex: Int = 0        // 展厅当前看到第几件
     var lastError: String?
 
