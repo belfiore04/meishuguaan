@@ -36,6 +36,7 @@ struct StartView: View {
                                 value: pulse
                             )
                     )
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .onAppear { pulse = true }
