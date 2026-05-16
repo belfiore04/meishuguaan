@@ -29,13 +29,33 @@ struct ChatView: View {
             // AI 主动发首句（仅当对话还没开始时）
             if session.messages.isEmpty {
                 session.messages.append(
-                    ChatMessage(
-                        role: .assistant,
-                        text: "看到了。\n你慢慢翻，想说什么再说。"
-                    )
+                    ChatMessage(role: .assistant, text: makeOpeningLine(book: book))
                 )
             }
         }
+    }
+
+    /// 第一句话——hardcoded template，按 book metadata 选。
+    /// 不调 LLM：0 延迟 + 不可能瞎说书的内容。
+    /// 同一本书每次进来都是同一句（用 title bytes 作种子），有"AI 还记得你"的体感。
+    private func makeOpeningLine(book: Book) -> String {
+        // 已读过这本书（已有展厅）→ 续读姿态，明确"接得上"
+        if session.findGallery(matchingTitle: book.title) != nil {
+            return "接着上次。"
+        }
+        // 新书：通用陪伴句 + 有作者时加 author hook
+        var candidates: [String] = [
+            "嗯，翻开吧。",
+            "开始吧。",
+            "翻开了。",
+            "嗯，开始读。",
+        ]
+        if let author = book.author, !author.isEmpty {
+            candidates.append("\(author)。")
+            candidates.append("\(author)。\n嗯，开始吧。")
+        }
+        let seed = book.title.utf8.reduce(0) { $0 + Int($1) }
+        return candidates[seed % candidates.count]
     }
 
     private var topBar: some View {
